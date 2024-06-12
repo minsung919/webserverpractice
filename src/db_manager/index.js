@@ -1,5 +1,6 @@
 // const Sequelize = require('sequelize');
 const { Model, DataTypes ,Sequelize } = require('sequelize');
+const { users_data } = require('./make_dummy.js');
 
 const sequelize = new Sequelize('webservice', 'root', '1234', {
     host: 'localhost',
@@ -23,7 +24,12 @@ User.init({
     pwd: {
       type: DataTypes.STRING,
       allowNull: false
+    },
+    age:{
+      type: DataTypes.INTEGER,
+      allowNull: false
     }
+
   }, {
     sequelize,
     modelName: 'User' // 테이블 이름 지정
@@ -31,17 +37,6 @@ User.init({
 
 
 
-const connectTestDb = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('DB연결 성공');
-    await User.sync();
-  } catch (error) {
-    console.error('DB연결 실패', error);
-  }
-  await sequelize.close();
-  console.log('DB연결 종료');
-}
 
+module.exports = {User, sequelize};
 
-connectTestDb();

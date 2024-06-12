@@ -7,7 +7,8 @@ const exp = require('constants');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET_KEY = 'your_secret_key';
 
-
+const { User, sequelize} = require('./src/db_manager/index.js');
+const { users_data } = require('./src/db_manager/make_dummy.js');
 
 
 
@@ -83,13 +84,6 @@ app.use((req, res, next) => {
 });
 
 
-const users = [
-  {id: "hong", name: '홍길동', pwd: '1234'},
-  {id: "kim", name: '김길동', pwd: '1234'},
-  {id: "so", name: '소길동', pwd: '1234'},
-  {id: "na", name: '나길동', pwd: '1234'},
-];
-
 //토큰기반 로그인
 app.post('/token/login', (req, res) => {
   const { id, pwd } = req.body;
@@ -116,23 +110,76 @@ app.get('/', (req, res) => {
 });
 
 
-//토큰 인증 사용
-app.get('/user',tokenAuthMiddleware, (req, res) => {  
-  const {id} = req.query;
-  
-  if(id) {
-    const resultUser = users.find((userData) =>{
-      return userData.id === id
-    });
 
-    if(resultUser){
-      return res.send(resultUser);
+app.get('/user', async (req, res) => {  
+  const {id} = req.query;
+
+  try {
+    if(id){
+      const user = await User.findOne({ where: { id } });
+      if(user){
+        console.log('특정 사용자:', user.toJSON());
+        res.send(user);
+      }else{
+        const users = await User.findAll();
+        console.log('사용자를 찾을 수 없습니다.');
+        console.log('모든 사용자:', users.map(user => user.toJSON()));
+        res.send(users);
+      }
+      
     }else{
-      return res.status(400).send("해당 사용자를 찾을 수 없습니다.");
+      const users = await User.findAll();
+      console.log('아이디 값이 없습니다, 모든 사용자를 찾습니다.');
+      console.log('모든 사용자:', users.map(user => user.toJSON()));
+      res.send(users);
     }
-  }else {
-    return res.send(users)
+
+    
+  } catch (error) {
+    console.error('사용자 조회 중 오류 발생:', error);
+    res.send('사용자 조회 중 오류 발생');
   }
+  
+});
+app.route('/user') 
+// .post (async (req,res) =>{
+
+// })
+// .put (async (req,res) =>{
+  
+// })
+// .delete (async (req,res) =>{
+  
+// })
+.get (async (req, res) => {  
+  const {id} = req.query;
+
+  try {
+    if(id){
+      const user = await User.findOne({ where: { id } });
+      if(user){
+        console.log('특정 사용자:', user.toJSON());
+        res.send(user);
+      }else{
+        const users = await User.findAll();
+        console.log('사용자를 찾을 수 없습니다.');
+        console.log('모든 사용자:', users.map(user => user.toJSON()));
+        res.send(users);
+      }
+      
+    }else{
+      const users = await User.findAll();
+      console.log('아이디 값이 없습니다, 모든 사용자를 찾습니다.');
+      console.log('모든 사용자:', users.map(user => user.toJSON()));
+      res.send(users);
+    }
+
+    
+  } catch (error) {
+    console.error('사용자 조회 중 오류 발생:', error);
+    res.send('사용자 조회 중 오류 발생');
+  }
+  
 });
 
 
@@ -217,6 +264,23 @@ app.get('/session/logout',logginMiddleware, (req, res) => {
 });
 
 
-app.listen(PORT, () => {
+app.listen(PORT, async() => {
+  try {
+    await sequelize.authenticate(); // 연결 테스트, SELECT 1+1 AS result
+    console.log('DB연결 성공');
+    await sequelize.sync({force:true}); // 전부 다 넣기
+    // await User.sync({force:true}); 하나하나 값 넣기
+    
+    
+    for (const user of users_data){
+      await User.create(user);
+    }
+
+
+  } catch (error) {
+    console.error('DB연결 실패', error);
+  }
+  // await sequelize.close();
+  // console.log('DB연결 종료');
   console.log(`Server is running on port ${PORT}`);
 });
